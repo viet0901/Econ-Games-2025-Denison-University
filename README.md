@@ -74,7 +74,6 @@ This project explores the role of civic centers in driving economic growth and a
 ## 📚 References
 
 * [3CDC – Cincinnati Center City Development Corp](https://www.3cdc.org/)
-* [Denison Data Analytics Program](https://denison.edu/academics/data-analytics)
 * On-the-ground interviews conducted in CBD and OTR, Spring 2025
 
 ---
