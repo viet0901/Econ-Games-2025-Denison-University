@@ -1,7 +1,9 @@
 # Foot Traffic Forward: A Growth Strategy for Cincinnati – Econ Games 2025
 
 **Team**: Sofia Vuong, Evan Pavlik, Thy Bui, Anthony Le, Pol Le, Trenton Loughery, Jigisha Pawa, Viet Nguyen
+
 **Faculty Advisors**: Emily Marshal, Kelly VanBuskirk
+
 **Partner**: 3CDC – Cincinnati Center City Development Corp
 
 ---
