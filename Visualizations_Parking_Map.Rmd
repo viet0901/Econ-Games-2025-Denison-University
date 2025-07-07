@@ -1,0 +1,361 @@
+---
+title: "Time Series/ Visualization for Net Sales and Parking"
+author: Econ Games - Denison University
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    theme: cerulean
+    code_folding: hide
+    toc_depth: 3
+  word_document:
+    toc: true
+    toc_depth: '3'
+institute: Denison University
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+# Import Library
+
+```{r, message=FALSE, warning=FALSE}
+# Import library
+library(tidyverse)
+library(ggplot2)
+library(ggmap)
+library(sf)
+library("readxl")
+library(fpp3)
+library(lubridate)
+```
+
+# Parking Visualization
+## Washington Park
+
+```{r}
+park <- read_excel("Washington Park - RevenueTransactions.xlsx")
+```
+
+
+```{r}
+park$Time <- as.POSIXct(park$Time, format = "%Y-%m-%d %H:%M:%S")
+
+
+
+park <- park %>%
+  mutate(
+    Year = year(Time),  # Extract year from Date
+    Month = month(Time)  # Extract month from Date
+  ) 
+
+park <- park %>%
+  mutate(
+    Quarter = case_when(
+      Month %in% 1:3 ~ 1,
+      Month %in% 4:6 ~ 2,
+      Month %in% 7:9 ~ 3,
+      Month %in% 10:12 ~ 4,
+      TRUE ~ NA_real_
+    )
+  )
+
+park <- park %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  group_by(YearQuarter) %>% #group by both year quarter and category group
+  summarise(Parking_Count = n()) # aggregate the data.
+```
+
+
+```{r}
+park2 <- read.csv("Washington Park - RevenueTransactions - Amano.csv")
+```
+
+```{r}
+park2$Entry..Date <- mdy_hm(park2$Entry..Date)
+
+park2 <- park2 %>%
+  mutate(
+    Year = year(Entry..Date),  # Extract year from Date
+    Month = month(Entry..Date)  # Extract month from Date
+  ) 
+
+park2 <- park2 %>%
+  mutate(
+    Quarter = case_when(
+      Month %in% 1:3 ~ 1,
+      Month %in% 4:6 ~ 2,
+      Month %in% 7:9 ~ 3,
+      Month %in% 10:12 ~ 4,
+      TRUE ~ NA_real_
+    )
+  )
+
+park2 <- park2 %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  group_by(YearQuarter) %>% #group by both year quarter and category group
+  summarise(Parking_Count = n()) # aggregate the data.
+```
+
+
+```{r}
+# Combine the two datasets
+combined_data <- bind_rows(park, park2)
+
+# Group by YearQuarter and sum Average_Duration
+summed_data <- combined_data %>%
+  group_by(YearQuarter) %>%
+  summarise(Parking_Count = sum(Parking_Count), .groups = "drop")
+```
+
+```{r}
+
+summed_data <- summed_data %>% filter(row_number() <= n()-1)
+
+summed_data %>% 
+  ggplot(aes(x = YearQuarter, y = Parking_Count)) +  
+  geom_line(aes(group=1), size = 1.5, color = "#4e8abf") +
+  labs(
+    title = "Number of Cars Parked Over Time for Washington Park",
+    x = "",
+    y = "Number of Car Parked"
+  ) +
+  theme_minimal(base_size = 13) +                             
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+## Fountain Square
+```{r}
+square <- read_excel("Fountain Square - RevenueTransactions.xlsx")
+```
+
+
+```{r}
+square$Time <- as.POSIXct(square$Time, format = "%Y-%m-%d %H:%M:%S")
+
+
+
+square <- square %>%
+  mutate(
+    Year = year(Time),  # Extract year from Date
+    Month = month(Time)  # Extract month from Date
+  ) 
+
+square <- square %>%
+  mutate(
+    Quarter = case_when(
+      Month %in% 1:3 ~ 1,
+      Month %in% 4:6 ~ 2,
+      Month %in% 7:9 ~ 3,
+      Month %in% 10:12 ~ 4,
+      TRUE ~ NA_real_
+    )
+  )
+
+square <- square %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  group_by(YearQuarter) %>% #group by both year quarter and category group
+  summarise(Parking_Count = n()) # aggregate the data.
+```
+
+
+```{r}
+square2 <- read.csv("Fountain Square - RevenueTransactions - Amano.csv")
+```
+
+```{r}
+library(lubridate)
+square2$Entry..Date <- mdy_hm(square2$Entry..Date)
+
+
+
+
+square2 <- square2 %>%
+  mutate(
+    Year = year(Entry..Date),  # Extract year from Date
+    Month = month(Entry..Date)  # Extract month from Date
+  ) 
+
+square2 <- square2 %>%
+  mutate(
+    Quarter = case_when(
+      Month %in% 1:3 ~ 1,
+      Month %in% 4:6 ~ 2,
+      Month %in% 7:9 ~ 3,
+      Month %in% 10:12 ~ 4,
+      TRUE ~ NA_real_
+    )
+  )
+
+square2 <- square2 %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  group_by(YearQuarter) %>% #group by both year quarter and category group
+  summarise(Parking_Count = n()) # aggregate the data.
+```
+
+
+```{r}
+# Combine the two datasets
+combined_data <- bind_rows(square, square2)
+
+# Group by YearQuarter and sum Average_Duration
+summed_data <- combined_data %>%
+  group_by(YearQuarter) %>%
+  summarise(Parking_Count = sum(Parking_Count), .groups = "drop")
+```
+
+```{r}
+
+summed_data <- summed_data %>% filter(row_number() <= n()-1)
+
+summed_data %>% 
+  ggplot(aes(x = YearQuarter, y = Parking_Count)) +  
+  geom_line(aes(group=1), size = 1.5, color = "#c62034") +
+  labs(
+    title = "Number of Cars Parked Over Time for Fountain Square",
+    x = "",
+    y = "Number of Car Parked"
+  ) +
+  theme_minimal(base_size = 13) +                             
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+
+# Map Visualization
+
+```{r}
+otr_bbox <- c(left = -84.60, bottom = 39.10, right = -84.47, top = 39.16)
+
+register_stadiamaps("9050a538-7675-4b7d-9b10-0e83be8cd8d7")
+# Get map data (Minimal style)
+otr_map <- get_stadiamap(otr_bbox, zoom = 14, maptype = "stamen_toner")
+
+
+cincy_landmarks <- data.frame(
+  name = c("Future Findley Rec Center", "University of Cincinnati"),
+  lon = c(-84.5160, -84.5186),
+  lat = c(39.1130, 39.1285)
+)
+
+
+polygon_coords <- data.frame(
+  lon = c(-84.54, -84.50, -84.50, -84.54, -84.54),
+  lat = c(39.115, 39.115, 39.125, 39.125, 39.115)  # Covers the area
+)
+
+
+# Plot map with landmarks (minimal style)
+ggmap(otr_map) +
+  geom_point(data = cincy_landmarks, aes(x = lon, y = lat), color = "#c62034", size = 4) +
+  geom_text(data = cincy_landmarks, aes(x = lon, y = lat, label = name), 
+            vjust = -1, hjust = 1, size = 5, color = "#c62034", fontface = "bold") +
+  labs(title = "Future Depelopment Near University of Cincinnati",
+        x = "Longitude", y = "Latitude") +
+  theme_minimal(base_size = 13) +                           
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5)) 
+```
+
+
+
+
+
+
+```{r}
+joined_data1 <- inner_join(line_graph_quarterly1, summed_data, by = "YearQuarter")
+```
+
+
+```{r}
+line_g <- line_graph_quarterly2 %>% 
+  group_by(Date) %>%
+  summarise(Total_Netsales = sum(Total_Netsales), .groups = "drop")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+line_g <- line_g %>%
+  mutate(
+   Date = as_date(Date)       # Convert to Date (start of quarter)
+  )
+
+line_g <- line_g %>%
+  dplyr::select(Date, Total_Netsales) %>%  # keep only relevant columns
+  mutate(YearMonth = yearmonth(Date)) %>%
+  group_by(YearMonth) %>%
+  summarise(Total_Netsales = sum(Total_Netsales), .groups = "drop") %>%  # Summarize by month
+  as_tsibble(index = YearMonth)
+
+
+line_g %>%
+  stretch_tsibble(.init = 3, .step = 1) 
+
+autoplot(line_g, Total_Netsales) +
+  labs(title = "Quarterly Net Sales", x = "Year-Quarter", y = "Total Net Sales") +
+  theme_minimal()
+```
+
+
+```{r}
+slt_lg <- stl(line_g, s.window = 4)
+
+
+plot(slt_lg)
+```
+
+```{r}
+auto.arima(line_g)
+`Net Sales (in thousands)` <- ts(line_g$Total_Netsales/1000, start = c(2022, 1), frequency = 12)
+
+
+# Run SARIMA forecast for 24 months ahead
+sarima.for(`Net Sales (in thousands)`, 
+           n.ahead =8, 0,0,0,0,1,0,
+           S = 12, 
+           plot = TRUE)
+
+# Add a title to the plot
+title(main = "SARIMA Forecast for Total Net Sales in Washington Park for 2025", 
+      col.main = "black", 
+      font.main = 2)
+
+
+```
+
+
+```{r}
+
+# Convert to tsibble
+line_g <- line_g %>%
+  as_tsibble(index = QuarterStart)
+
+is_tsibble(line_g) 
+
+line_g <- line_g %>%
+  mutate(Total_Netsales = as.numeric(Total_Netsales))
+
+unitroot_ndiffs(line_g$Total_Netsales)
+
+line_g %>%
+  features(Total_Netsales, unitroot_ndiffs)
+```
+

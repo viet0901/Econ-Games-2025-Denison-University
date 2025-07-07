@@ -1,0 +1,552 @@
+---
+title: "Visualizations for Concession"
+author: Econ Games - Denison University
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    theme: cerulean
+    code_folding: hide
+    toc_depth: 3
+  word_document:
+    toc: true
+    toc_depth: '3'
+institute: Denison University
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+# Import Library
+
+```{r, message=FALSE, warning=FALSE}
+# Import library
+library(tidyverse)
+library(dplyr)
+library(ggthemes)
+library("readxl")
+library(fpp3)
+library(astsa)
+```
+
+# Data Cleaning
+
+```{r}
+concession <- read_excel("2. Concession Data.xlsx")
+```
+
+```{r}
+summary(concession)
+```
+
+```{r}
+clean_data <- concession %>% 
+  dplyr::select(Date, Location, `Gross Sales`, `Discounts`, `Net Sales`, `Tax`, Count, `Itemization Type`, Category)
+```
+
+```{r}
+# Checking data
+sum(is.na(clean_data))
+sum(is.na(clean_data$`Itemization Type`))
+summary(clean_data)
+```
+
+```{r}
+# Group category
+unique_categories <- unique(clean_data$Location)
+print(unique_categories)
+
+clean_data_with_group <- clean_data %>%
+  mutate(
+    CategoryGroup = case_when(
+      Category %in% c("Beverages", "Beer", "Liquor", "Wine", "Seltzer", "Beverage Misc", "Beverage Minimum", "Food") ~ "Food and Beverage",
+      Category %in% c("Facility Admissions", "Ice Rink Misc.", "Skate Rental") ~ "Activities and Rentals",
+      Category %in% c("Merchandise", "Apparel") ~ "Merchandise",
+      Category %in% c("Donations", "Tips") ~ "Donation and Tips",
+      TRUE ~ "Other"
+    )
+  )
+
+```
+
+
+# Visualizations
+
+```{r}
+# Group by year, month, and location, then sum revenue
+line_graph <- clean_data_with_group %>%
+  mutate(
+    Year = year(Date),
+    Month = month(Date)
+  ) 
+```
+
+
+```{r}
+line_graph_quarterly <- line_graph %>%
+  mutate(
+    Quarter = case_when(
+      Month %in% 1:3 ~ 1,
+      Month %in% 4:6 ~ 2,
+      Month %in% 7:9 ~ 3,
+      Month %in% 10:12 ~ 4,
+      TRUE ~ NA_real_
+    )
+  )
+
+line_graph_quarterly1 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location == 'Fountain Square Management Group') %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop")
+
+line_graph_quarterly1 <- line_graph_quarterly1 %>%
+  mutate(YearQuarter = factor(YearQuarter, levels = unique(YearQuarter), ordered = TRUE))
+
+
+line_graph_quarterly1 <- line_graph_quarterly1 %>% filter(row_number() <= n()-1)
+
+# Create the line graph
+line_graph_quarterly1 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category – Fountain Square",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+  
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf", 
+    "Activities and Rentals" = "#c62034",
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) +
+  guides(color = guide_legend(nrow = 2))
+```
+
+
+```{r}
+line_graph_quarterly2 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location == 'Washington Park Management Group') %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop") %>% 
+  filter(CategoryGroup == 'Food and Beverage' )
+
+
+line_graph_quarterly2 <- line_graph_quarterly2 %>% filter(row_number() <= n()-1)
+
+# Create the line graph
+line_graph_quarterly2 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category – Washington Park",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+
+  # Use a professional color palette
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf",  
+    "Activities and Rentals" = "#c62034",  
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",  
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) 
+```
+
+```{r}
+line_graph_quarterly3 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location == 'Memorial Hall Operations') %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop")
+
+line_graph_quarterly3 <- line_graph_quarterly3 %>% filter(row_number() <= n()-1)
+
+# Create the line graph
+line_graph_quarterly3 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category – Memorial Hall",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+
+  # Use a professional color palette
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf",  
+    "Activities and Rentals" = "#c62034",  
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",  
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) +
+  guides(color = guide_legend(nrow = 2))
+```
+
+
+```{r}
+line_graph_quarterly4 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location == 'Court Street') %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop") # aggregate the data.
+
+
+
+line_graph_quarterly4 <- line_graph_quarterly4 %>% filter(row_number() <= n()-1)
+
+# Create the line graph
+line_graph_quarterly4 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category – Court Street",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+
+  # Use a professional color palette
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf",  
+    "Activities and Rentals" = "#c62034",  
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",  
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.direction = "horizontal",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) +
+  guides(color = guide_legend(nrow = 2))
+```
+
+
+```{r}
+line_graph_quarterly5 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location == 'Ziegler Park  - Concessions') %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop") # aggregate the data.
+
+
+line_graph_quarterly5 <- line_graph_quarterly5 %>% filter(row_number() <= n()-1)
+
+
+# Create the line graph
+line_graph_quarterly5 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category – Ziegler Park  - Concessions",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+
+  # Use a professional color palette
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf",  
+    "Activities and Rentals" = "#c62034",  
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",  
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.direction = "horizontal",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) +
+  guides(color = guide_legend(nrow = 2))
+```
+
+
+```{r}
+line_graph_quarterly6 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location == "Ziggy's") %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop") # aggregate the data.
+
+
+
+# Create the line graph
+line_graph_quarterly6 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category – Ziggy's",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+
+  # Use a professional color palette
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf",  
+    "Activities and Rentals" = "#c62034",  
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",  
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.direction = "horizontal",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) +
+  guides(color = guide_legend(nrow = 2))
+```
+
+```{r}
+line_graph_quarterly7 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location == "Ziegler Park - Pool") %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop") # aggregate the data.
+
+
+
+# Create the line graph
+line_graph_quarterly7 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category – Ziegler Park - Pool",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+
+  # Use a professional color palette
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf",  
+    "Activities and Rentals" = "#c62034",  
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",  
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.direction = "horizontal",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) +
+  guides(color = guide_legend(nrow = 2))
+
+```
+
+
+```{r}
+line_graph_quarterly8 <- line_graph_quarterly %>%
+  mutate(YearQuarter = paste0(Year, "-Q", Quarter)) %>%
+  filter(Location ==  "Imagination Alley"  ) %>%
+  group_by(YearQuarter, CategoryGroup) %>% #group by both year quarter and category group
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop") # aggregate the data.
+
+
+
+# Create the line graph
+line_graph_quarterly8 %>% 
+  ggplot(aes(x = YearQuarter, y = Total_Netsales / 1000, color = CategoryGroup, group = CategoryGroup)) +  
+  geom_line(size = 1.5) +  # Increase line thickness for visibility
+  labs(
+    title = "Quarterly Net Sales by Category –  Imagination Alley",
+    x = "",
+    y = "Total Net Sales (in Thousands)",  
+    color = "Category Group"
+  ) +
+  scale_y_continuous(labels = scales::comma) +  
+
+  # Use a professional color palette
+  scale_color_manual(values = c(
+    "Food and Beverage" = "#4e8abf",  
+    "Activities and Rentals" = "#c62034",  
+    "Other" = "#9da0a3",  
+    "Donation and Tips" = "#9fa739",  
+    "Merchandise" = "#FF7F00"  
+  )) +
+
+  theme_minimal(base_size = 13) +                             
+  theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.4),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "top",
+        legend.direction = "horizontal",
+        legend.title = element_text(face = "bold", size = 10),  # Smaller legend title
+        legend.text = element_text(size = 9),  # Smaller legend text
+        legend.key.size = unit(0.5, "cm")) +
+  guides(color = guide_legend(nrow = 2))
+```
+
+
+# Time Series
+
+```{r}
+line_g <- line_graph_quarterly %>%
+  filter(Location == 'Washington Park Management Group') %>%
+  group_by(Date) %>%
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop")
+```
+
+```{r}
+line_g <- line_g %>%
+  mutate(
+   Date = as_date(Date)       # Convert to Date (start of quarter)
+  )
+
+line_g <- line_g %>%
+  dplyr::select(Date, Total_Netsales) %>%  # keep only relevant columns
+  mutate(YearMonth = yearmonth(Date)) %>%
+  group_by(YearMonth) %>%
+  summarise(Total_Netsales = sum(Total_Netsales), .groups = "drop") %>%  # Summarize by month
+  as_tsibble(index = YearMonth)
+
+
+line_g %>%
+  stretch_tsibble(.init = 3, .step = 1) 
+
+autoplot(line_g, Total_Netsales) +
+  labs(title = "Quarterly Net Sales", x = "Year-Quarter", y = "Total Net Sales") +
+  theme_minimal()
+```
+
+
+```{r}
+slt_lg <- stl(line_g, s.window = 4)
+
+
+plot(slt_lg)
+```
+
+```{r}
+`Net Sales (in thousands)` <- ts(line_g$Total_Netsales/1000, start = c(2022, 1), frequency = 12)
+
+
+# Run SARIMA forecast for 24 months ahead
+sarima.for(`Net Sales (in thousands)`, 
+           n.ahead =8, 0,0,0,0,1,0,
+           S = 12, 
+           plot = TRUE)
+
+# Add a title to the plot
+title(main = "SARIMA Forecast for Total Net Sales in Washington Park for 2025", 
+      col.main = "black", 
+      font.main = 2)
+
+
+```
+
+
+```{r}
+line_g2 <- line_graph_quarterly %>%
+  filter(Location == 'Fountain Square Management Group') %>%
+  group_by(Date) %>%
+  summarise(Total_Netsales = sum(`Net Sales`), .groups = "drop")
+```
+
+```{r}
+line_g2 <- line_g2 %>%
+  mutate(
+   Date = as_date(Date)       # Convert to Date (start of quarter)
+  )
+
+line_g2 <- line_g2 %>%
+  dplyr::select(Date, Total_Netsales) %>%  # keep only relevant columns
+  mutate(YearMonth = yearmonth(Date)) %>%
+  group_by(YearMonth) %>%
+  summarise(Total_Netsales = sum(Total_Netsales), .groups = "drop") %>%  # Summarize by month
+  as_tsibble(index = YearMonth)
+
+
+line_g2 %>%
+  stretch_tsibble(.init = 3, .step = 1) 
+
+autoplot(line_g2, Total_Netsales) +
+  labs(title = "Quarterly Net Sales", x = "Year-Quarter", y = "Total Net Sales") +
+  theme_minimal()
+```
+
+
+```{r}
+slt_lg2 <- stl(line_g2, s.window = 4)
+
+
+plot(slt_lg2)
+```
+
+```{r}
+`Net Sales (in thousands)` <- ts(line_g2$Total_Netsales/1000, start = c(2022, 1), frequency = 12)
+
+
+# Run SARIMA forecast for 24 months ahead
+sarima.for(`Net Sales (in thousands)`, 
+           n.ahead =10, 0,0,0,0,1,0,
+           S = 12, 
+           plot = TRUE)
+
+# Add a title to the plot
+title(main = "SARIMA Forecast for Total Net Sales in Fountain Square for 2025", 
+      col.main = "black", 
+      font.main = 2)
+
+
+```
+
+
