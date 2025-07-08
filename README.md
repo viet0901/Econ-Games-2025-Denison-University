@@ -20,6 +20,7 @@ This project explores the role of civic centers in driving economic growth and a
 .
 ├── data/                                      # Net sales, parking data, and forecasts
 ├── Presentation.pdf                           # Slides used at Econ Games 2025
+├── Handout.pdf                                # Handouts used at Econ Games 2025
 ├── Visualizations_Parking_Map.Rmd             # Visualizations for Parking/Map
 ├── SARIMA_Visualizations_Net_Sales            # Visualizations for Net Sales and SARIMA model
 ├── README.md                                  # Project summary and documentation
