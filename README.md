@@ -1,4 +1,4 @@
-# Foot Traffic Forward: A Growth Strategy for Cincinnati – Econ Games 2025
+# Foot Traffic Forward: A Strategy for Cincinnati – Econ Games 2025
 
 **Team**: Sofia Vuong, Evan Pavlik, Thy Bui, Anthony Le, Pol Le, Trenton Loughery, Jigisha Pawa, Viet Nguyen
 
